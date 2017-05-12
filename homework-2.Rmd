@@ -307,7 +307,11 @@ cart_model$variable.importance
 ```
 
 ```{r}
-summary(fit_math_best)
+lr_imp <- varImp(fit_math_best)
+ord_idx <- do.call(order, lr_imp)
+ord_lr_imp <- lr_imp[ord_idx, ]
+# rownames(ord_lr_imp) <- rownames(lr_imp)[ord_idx]
+ord_lr_imp
 ```
 
 ### Task 1d

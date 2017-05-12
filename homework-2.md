@@ -68,7 +68,7 @@ summary(fit3_small)
     ## Multiple R-squared:  0.01807,    Adjusted R-squared:  0.003045 
     ## F-statistic: 1.203 on 3 and 196 DF,  p-value: 0.31
 
-The estimates of the true parameter values are not statistically significant. Adjusted R-squared of the model is only 0.003045.
+Non of the estimates of the true parameter values are statistically significant for alpha = 0.05. Adjusted R-squared of the model is 0.003045.
 
 ### Task 4
 
@@ -137,11 +137,11 @@ summary(fit8_small)
     ## Multiple R-squared:  0.01738,    Adjusted R-squared:  0.002335 
     ## F-statistic: 1.155 on 3 and 196 DF,  p-value: 0.3281
 
-Again, the estimates of the true parameter values are not statistically significant. Adjusted R-squared of the model is only 0.002335. The standard errors are nearly twice bigger then in case of p = 0.3.
+The estimates of the true parameter values are not statistically significant. Adjusted R-squared of the model is only 0.002335. The standard errors are nearly twice bigger then for p = 0.3.
 
 ### Task 6
 
-It's assumed that parameter estimates of our models are normally distributed, so we can compute the confidence intervals using the normal distributions with appropriate standard error. As you can see below (and it's expected) the larger samples have lower standard error and narrower confidence intervals.
+It's assumed that parameter estimates of our models are normally distributed, so we can compute the confidence intervals using the standard normal distribution with appropriate standard error. As you can see below (and it's expected) the larger samples have lower standard error and narrower confidence intervals, that include the true value of the parameters.
 
 ``` r
 confint(fit3_small)
@@ -174,6 +174,8 @@ confint(fit3_big)
     ## X3           -0.075038127  0.0227087
 
 ### Task 7
+
+One of the approach we can choose is to mesure the change in R-squared that each variable produces when it is added to a model that already contains all of the other variables. Another way is to directly compare t-statistics of the parameters, since they are based on standartized values.
 
 ### Task 8
 
@@ -235,7 +237,7 @@ summary(fit8_two_vars)
     ## Multiple R-squared:  0.02914,    Adjusted R-squared:  0.01929 
     ## F-statistic: 2.957 on 2 and 197 DF,  p-value: 0.0543
 
-In both cases the standard error for the b0 estimate have been reduced significantly as well as for b1 and b2. It's a result of the bias-variance tradeoff: the lower the number of independent variables in the model, the lower variance, and the bigger the bias we observe.
+In both cases the standard error for the b0 estimate have been reduced significantly as well as for b1 and b2. It's a consequence of the bias-variance tradeoff: the less number of independent variables in the model leads to lower variance at the cost of potential bias.
 
 Problem 4: Linear regression analysis - real data
 -------------------------------------------------
@@ -356,57 +358,19 @@ No, because by default R treats goout as numeric. It should be converted to ordi
 
 Student achievements are influenced by different factors: school related, demographic and social. According to the fitted linear model:
 
--   number of school absences has low correlation with G3, for every school absence G3 grows on 0.05629 (assuming that other parameters are fixed)
--   time spent with friends has negative correlation with G3, for every level G3 reduces by -0.59 (assuming that other parameters are fixed)
--   mother's occupation has different correlations with student's G3: the difference in G3 if mother has a health related job is 0.99808, service - 0.65832, teacher - -1.24149, other - -0.35900 (everytime assuming that other parameters are fixed).
+-   number of school absences has low correlation with G3, on average when absence gorws by one unit G3 grows on 0.05629 (assuming that other parameters are fixed)
+-   time spent with friends has negative correlation with G3, on average when time spent with friends drops by one unit G3 grows on 0.59 (assuming that other parameters are fixed)
+-   mother's occupation has different correlations with student's G3: on average the difference in G3 if mother has a health related job is 0.99808, service - 0.65832, teacher - -1.24149, other - -0.35900 (everytime assuming that other parameters are fixed).
 
 ### Task 5
 
 ``` r
-confint(fit_math)
+intervals <- confint(fit_math)
+intervals[rownames(intervals) == "absences", ]
 ```
 
-    ##                         2.5 %      97.5 %
-    ## (Intercept)       5.265269825 22.89011604
-    ## schoolMS         -0.831200089  2.28230265
-    ## sexM              0.278970372  2.24575352
-    ## age              -0.802346387  0.05202919
-    ## addressU         -0.597419924  1.70011912
-    ## famsizeLE3       -0.257401743  1.66301463
-    ## PstatusT         -1.743762568  1.10357021
-    ## Medu             -0.178701244  1.09243303
-    ## Fedu             -0.650561186  0.44140971
-    ## Mjobhealth       -1.201018669  3.19718390
-    ## Mjobother        -1.761558342  1.04355384
-    ## Mjobservices     -0.910763216  2.22740665
-    ## Mjobteacher      -3.283303195  0.80032233
-    ## Fjobhealth       -2.480318723  3.17566770
-    ## Fjobother        -2.631650695  1.39231373
-    ## Fjobservices     -2.544486894  1.61294324
-    ## Fjobteacher      -1.223675841  3.87604983
-    ## reasonhome       -1.010637635  1.16765835
-    ## reasonother      -0.830822061  2.38496223
-    ## reasonreputation -0.520873311  1.74695409
-    ## guardianmother   -1.003229112  1.14278855
-    ## guardianother    -1.215509105  2.71571800
-    ## traveltime       -0.906903005  0.42636162
-    ## studytime        -0.016204589  1.11523890
-    ## failures         -2.378692653 -1.06926122
-    ## schoolsupyes     -2.662212843 -0.03895481
-    ## famsupyes        -1.803243722  0.07960580
-    ## paidyes          -0.599825352  1.27932069
-    ## activitiesyes    -1.204583825  0.54552390
-    ## nurseryyes       -1.257617212  0.90301030
-    ## higheryes        -0.749218551  3.49011992
-    ## internetyes      -0.720325350  1.71659530
-    ## romanticyes      -2.017351860 -0.17163693
-    ## famrel           -0.252103237  0.71520493
-    ## freetime         -0.164376241  0.76921511
-    ## goout            -1.035201219 -0.15214071
-    ## Dalc             -0.922950099  0.37849292
-    ## Walc             -0.224368236  0.75113869
-    ## health           -0.493437557  0.13987524
-    ## absences         -0.000675997  0.11325894
+    ##        2.5 %       97.5 % 
+    ## -0.000675997  0.113258940
 
 We are 95% confident the true difference in G3 is in the interval between -0.0008 and 0.11 for every school absence given that all other parameters are fixed. Since the value goes over zero, it's not a statistically significant estimate.
 
@@ -471,8 +435,6 @@ Since the absence variable is numeric, we can impute a missing value by taking a
 
 The homoscedasticity assumption of the fitted model is violated here.
 
-### Task 10
-
 ### Task 11
 
 ``` r
@@ -532,21 +494,6 @@ Problem 5: Regression techniques
 ### Task 1a
 
 ``` r
-set.seed(42)
-bw <- npregbw(G3 ~ absences, regtype = "lc", data = train)
-```
-
-    ## 
-    Multistart 1 of 1 |
-    Multistart 1 of 1 |
-    Multistart 1 of 1 |
-    Multistart 1 of 1 /
-    Multistart 1 of 1 |
-    Multistart 1 of 1 |
-                       
-
-``` r
-np_nw_fit <- npreg(bws = bw)
 summary(np_nw_fit)
 ```
 
@@ -565,6 +512,13 @@ summary(np_nw_fit)
 
 R-squared for Nadaraya-Watson model is 0.113144, R-squared for our best univariate regression is 0.2666.
 
+``` r
+plot(bw)
+points(train$absences, train$G3, cex=.5, pch=19)
+```
+
+![](homework-2_files/figure-markdown_github/unnamed-chunk-22-1.jpeg)
+
 ### Task 1b
 
 ``` r
@@ -575,7 +529,7 @@ cv_lasso <- cv.glmnet(train_matrix, train$G3, alpha=1)
 plot(cv_lasso)
 ```
 
-![](homework-2_files/figure-markdown_github/unnamed-chunk-21-1.jpeg)
+![](homework-2_files/figure-markdown_github/unnamed-chunk-23-1.jpeg)
 
 ``` r
 test_matrix <- model.matrix( ~ .-1, test[,1:length(test)-1])
@@ -630,40 +584,15 @@ cart_model$variable.importance
     ##   32.96712
 
 ``` r
-summary(fit_math_best)
+lr_imp <- varImp(fit_math_best)
+ord_idx <- do.call(order, lr_imp)
+ord_lr_imp <- lr_imp[ord_idx, ]
+# rownames(ord_lr_imp) <- rownames(lr_imp)[ord_idx]
+ord_lr_imp
 ```
 
-    ## 
-    ## Call:
-    ## lm(formula = G3 ~ sex + Mjob + studytime + failures + schoolsup + 
-    ##     famsup + higher + goout + health + absences, data = train)
-    ## 
-    ## Residuals:
-    ##      Min       1Q   Median       3Q      Max 
-    ## -12.2590  -2.0246   0.4231   2.6556   8.4017 
-    ## 
-    ## Coefficients:
-    ##              Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)   9.50679    1.65414   5.747 2.32e-08 ***
-    ## sexM          1.52079    0.52909   2.874  0.00435 ** 
-    ## Mjobhealth    3.21770    1.01749   3.162  0.00173 ** 
-    ## Mjobother     0.16377    0.75896   0.216  0.82931    
-    ## Mjobservices  2.01367    0.80337   2.507  0.01275 *  
-    ## Mjobteacher   0.29533    0.93027   0.317  0.75112    
-    ## studytime     0.68570    0.30653   2.237  0.02606 *  
-    ## failures     -2.02025    0.33740  -5.988 6.37e-09 ***
-    ## schoolsupyes -1.12565    0.69375  -1.623  0.10579    
-    ## famsupyes    -0.96146    0.49934  -1.925  0.05516 .  
-    ## higheryes     2.42983    1.18868   2.044  0.04185 *  
-    ## goout        -0.66965    0.21265  -3.149  0.00181 ** 
-    ## health       -0.31333    0.17147  -1.827  0.06870 .  
-    ## absences      0.05205    0.02917   1.785  0.07536 .  
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## Residual standard error: 4.051 on 286 degrees of freedom
-    ## Multiple R-squared:  0.2666, Adjusted R-squared:  0.2332 
-    ## F-statistic: 7.995 on 13 and 286 DF,  p-value: 1.217e-13
+    ##  [1] 0.2157832 0.3174702 1.6225467 1.7847845 1.8273078 1.9254730 2.0441495
+    ##  [8] 2.2369576 2.5065202 2.8743524 3.1490123 3.1624029 5.9876777
 
 ### Task 1d
 
@@ -843,7 +772,7 @@ plot(roc_curve, rint.auc=TRUE, auc.polygon=TRUE, grid.col=c("green", "red"), pri
      reuse.auc=FALSE, print.auc=TRUE)
 ```
 
-![](homework-2_files/figure-markdown_github/unnamed-chunk-35-1.jpeg)
+![](homework-2_files/figure-markdown_github/unnamed-chunk-37-1.jpeg)
 
 0.5 is optimal threshold, however we may intrested in increasing `Specificity` to more than 0.7 and choose 0.6 to be the threshold.
 
