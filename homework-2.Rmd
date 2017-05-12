@@ -308,9 +308,9 @@ cart_model$variable.importance
 
 ```{r}
 lr_imp <- varImp(fit_math_best)
-ord_idx <- do.call(order, lr_imp)
-ord_lr_imp <- lr_imp[ord_idx, ]
-# rownames(ord_lr_imp) <- rownames(lr_imp)[ord_idx]
+ord_idx <- do.call(order, -lr_imp)
+ord_lr_imp <- data.frame("t.statistics" = lr_imp[ord_idx, ])
+rownames(ord_lr_imp) <- rownames(lr_imp)[ord_idx]
 ord_lr_imp
 ```
 
@@ -360,7 +360,7 @@ summary(class_lr_best_model)
 
 ### Task 2b
 
-The log odds of passing the course falls by 0.4429 times (by 0.6421 for the pure odds) for every increasing level of time spent with friends, given that all other parameters fixed. 
+The log odds of passing the course falls by 0.4429 times (by 0.6421 for the pure odds) for every increasing unit of time spent with friends, given that all other parameters fixed. 
 
 ### Task 2c
 
@@ -383,9 +383,10 @@ For a specific new student we can use the following procedure:
 ### Task 2d
 
 ```{r}
+thr <- .5
 test_pred <- predict(class_lr_best_model, test_class)
 test_prob <- sigmoid(test_pred)
-student_pass_pred <- if_else(test_prob > .5, T, F)
+student_pass_pred <- if_else(test_prob > thr, T, F)
 confusionMatrix(student_pass_pred, factor(test_class$G3), positive = "TRUE")
 ```
 
@@ -399,7 +400,7 @@ plot(roc_curve, rint.auc=TRUE, auc.polygon=TRUE, grid.col=c("green", "red"), pri
      reuse.auc=FALSE, print.auc=TRUE)
 ```
 
-0.5 is optimal threshold, however we may intrested in increasing `Specificity` to more than 0.7 and choose 0.6 to be the threshold. 
+0.5 is optimal threshold, but let's say we are more intrested in reducing the number of false negatives by increasing `Specificity` to more than 0.7. To achive that we can choose 0.6 to be the threshold. 
 
 ### Task 2f
 

@@ -585,14 +585,26 @@ cart_model$variable.importance
 
 ``` r
 lr_imp <- varImp(fit_math_best)
-ord_idx <- do.call(order, lr_imp)
-ord_lr_imp <- lr_imp[ord_idx, ]
-# rownames(ord_lr_imp) <- rownames(lr_imp)[ord_idx]
+ord_idx <- do.call(order, -lr_imp)
+ord_lr_imp <- data.frame("t.statistics" = lr_imp[ord_idx, ])
+rownames(ord_lr_imp) <- rownames(lr_imp)[ord_idx]
 ord_lr_imp
 ```
 
-    ##  [1] 0.2157832 0.3174702 1.6225467 1.7847845 1.8273078 1.9254730 2.0441495
-    ##  [8] 2.2369576 2.5065202 2.8743524 3.1490123 3.1624029 5.9876777
+    ##              t.statistics
+    ## failures        5.9876777
+    ## Mjobhealth      3.1624029
+    ## goout           3.1490123
+    ## sexM            2.8743524
+    ## Mjobservices    2.5065202
+    ## studytime       2.2369576
+    ## higheryes       2.0441495
+    ## famsupyes       1.9254730
+    ## health          1.8273078
+    ## absences        1.7847845
+    ## schoolsupyes    1.6225467
+    ## Mjobteacher     0.3174702
+    ## Mjobother       0.2157832
 
 ### Task 1d
 
@@ -703,7 +715,7 @@ summary(class_lr_best_model)
 
 ### Task 2b
 
-The log odds of passing the course falls by 0.4429 times (by 0.6421 for the pure odds) for every increasing level of time spent with friends, given that all other parameters fixed.
+The log odds of passing the course falls by 0.4429 times (by 0.6421 for the pure odds) for every increasing unit of time spent with friends, given that all other parameters fixed.
 
 ### Task 2c
 
@@ -729,9 +741,10 @@ For a specific new student we can use the following procedure:
 ### Task 2d
 
 ``` r
+thr <- .5
 test_pred <- predict(class_lr_best_model, test_class)
 test_prob <- sigmoid(test_pred)
-student_pass_pred <- if_else(test_prob > .5, T, F)
+student_pass_pred <- if_else(test_prob > thr, T, F)
 confusionMatrix(student_pass_pred, factor(test_class$G3), positive = "TRUE")
 ```
 
@@ -774,7 +787,7 @@ plot(roc_curve, rint.auc=TRUE, auc.polygon=TRUE, grid.col=c("green", "red"), pri
 
 ![](homework-2_files/figure-markdown_github/unnamed-chunk-37-1.jpeg)
 
-0.5 is optimal threshold, however we may intrested in increasing `Specificity` to more than 0.7 and choose 0.6 to be the threshold.
+0.5 is optimal threshold, but let's say we are more intrested in reducing the number of false negatives by increasing `Specificity` to more than 0.7. To achive that we can choose 0.6 to be the threshold.
 
 ### Task 2f
 
