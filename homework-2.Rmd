@@ -1,0 +1,408 @@
+---
+title: "Homework2"
+author: "Mykola Pavlov"
+date: "5/9/2017"
+output:
+  github_document:
+    toc: true
+    toc_depth: 1
+    dev: jpeg
+---
+
+```{r setup, include=FALSE,  fig.width=10, fig.height=8}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE, warning=FALSE, echo=FALSE}
+library(tidyverse)
+library(MASS)
+library(car)
+library(modelr)
+library(np)
+library(glmnet)
+library(forecast)
+library(caret)
+library(pROC)
+library(rpart)
+```
+
+## Problem 3: Regression analysis - artificial data
+
+### Task 1
+
+```{r}
+generate_mv <- function(size, means, p) {
+  mvrnorm(size, means, toeplitz(c(1, p, p)))
+}
+
+set.seed(42)
+n = 200
+p <- .3
+mu <- c(10, 100, 1000)
+smp <- generate_mv(n, mu, p)
+```
+
+### Task 2
+
+```{r}
+generate_depend <- function(samples, betas) {
+  size <- dim(samples)[1]
+  data <- cbind(rep(1, size), smp)
+  y <- data %*% betas + rnorm(size)
+  bind_cols(data.frame(samples), data.frame(y = y))
+}
+
+
+set.seed(777)
+b <- matrix(c(1, .1, .01, .001))
+df <- generate_depend(smp, b)
+```
+
+### Task 3
+
+```{r}
+fit3_small <- lm(y ~., df)
+summary(fit3_small)
+```
+
+Non of the estimates of the true parameter values are statistically significant for alpha = 0.05. Adjusted R-squared of the model is 0.003045.
+
+### Task 4
+
+```{r}
+n <- 2000
+set.seed(7)
+smp <- generate_mv(n, mu, p)
+df <- generate_depend(smp, b)
+fit3_big <- lm(y ~., df)
+summary(fit3_big)
+```
+
+The estimates for X1 and X2 are now statistically significant, their true values are 0.1, 0.01 vs the estimated 0.07, 0.05. The standard errors of the variables were reduced by approximately three times.
+
+### Task 5
+
+```{r}
+p <- .8
+n <- 200
+set.seed(777)
+smp <- generate_mv(n, mu, p)
+df <- generate_depend(smp, b)
+fit8_small <- lm(y ~., df)
+summary(fit8_small)
+```
+
+The estimates of the true parameter values are not statistically significant. Adjusted R-squared of the model is only 0.002335. The standard errors are nearly twice bigger then for p = 0.3. 
+
+### Task 6
+
+It's assumed that parameter estimates of our models are normally distributed, so we can compute the confidence intervals using the standard normal distribution with appropriate standard error. As you can see below (and it's expected) the larger samples have lower standard error and narrower confidence intervals, that include the true value of the parameters.
+
+```{r}
+confint(fit3_small)
+```
+
+```{r}
+confint(fit8_small)
+```
+
+```{r}
+confint(fit3_big)
+```
+
+### Task 7
+
+One of the approach we can choose is to mesure the change in R-squared that each variable produces when it is added to a model that already contains all of the other variables. Another way is to directly compare t-statistics of the parameters, since they are based on standartized values. 
+
+### Task 8
+
+```{r}
+p <- .1
+n <- 200
+set.seed(777)
+smp <- generate_mv(n, mu, p)
+df <- generate_depend(smp, b)
+fit1_two_vars <- lm(y ~ X1 + X2, df)
+summary(fit1_two_vars)
+```
+
+```{r}
+p <- .8
+n <- 200
+set.seed(42)
+smp <- generate_mv(n, mu, p)
+df <- generate_depend(smp, b)
+fit8_two_vars <- lm(y ~ X1 + X2, df)
+summary(fit8_two_vars)
+```
+
+In both cases the standard error for the b0 estimate have been reduced significantly as well as for b1 and b2. It's a consequence of the bias-variance tradeoff: the less number of independent variables in the model leads to lower variance at the cost of potential bias.
+
+## Problem 4: Linear regression analysis - real data
+
+### Task 1
+
+```{r, include=F}
+df <- read_delim("student/student-mat.csv", delim = ";") %>%
+  mutate(G1 = NULL, G2 = NULL)
+```
+
+```{r}
+set.seed(42)
+fit_math <- lm(G3 ~ ., df)
+summary(fit_math)
+```
+
+For every categorical variable R creates additional dummy variables using one-hot encoding procedure. Every column encodes the presence (or absence) of the specific category level in the sample (in terms of indicator function). For example, if `Mjobhealth` column contains 1 it means that mother's job is realted to healthcare for this particular student. When all variables are encoded properly, R fits the logistic model to this modified data set. 
+
+### Task 2
+
+Let's test the following hypothesis:
+
+- H0: Mjobhealth = Mjobother = Mjobservices = Mjobteacher = 0
+- HA: At least one of Mjob's is not equal to 0
+
+```{r}
+glh_test <- linearHypothesis(fit_math, c(
+  "Mjobhealth = 0",
+  "Mjobother = 0",
+  "Mjobservices = 0",
+  "Mjobteacher = 0"
+))
+
+glh_test
+```
+
+It looks like we have to reject the null hypothesis for alpha = 0.05.
+
+
+### Task 3
+
+No, because by default R treats goout as numeric. It should be converted to ordinal factor first. 
+
+### Task 4
+
+Student achievements are influenced by different factors: school related, demographic and social. According to the fitted linear model:
+
+- number of school absences has low correlation with G3, on average when absence gorws by one unit G3 grows on 0.05629 (assuming that other parameters are fixed)
+- time spent with friends has negative correlation with G3, on average when time spent with friends drops by one unit G3 grows on 0.59 (assuming that other parameters are fixed)
+- mother's occupation has different correlations with student's G3: on average the difference in G3 if mother has a health related job is 0.99808, service - 0.65832, teacher - -1.24149, other - -0.35900 (everytime assuming that other parameters are fixed).
+
+### Task 5
+
+```{r}
+intervals <- confint(fit_math)
+intervals[rownames(intervals) == "absences", ]
+```
+
+We are 95% confident the true difference in G3 is in the interval between -0.0008 and 0.11 for every school absence given that all other parameters are fixed. Since the value goes over zero, it's not a statistically significant estimate.
+
+### Task 6
+
+```{r}
+fit_math_reduced <- stepAIC(fit_math, trace = F)
+summary(fit_math_reduced)
+```
+
+### Task 7
+
+```{r}
+plot(fit_math_reduced, which=4, cook.levels=cutoff)
+```
+
+Samples 141, 260, and 277 appears to be the most influential.
+
+### Task 8
+
+Since the absence variable is numeric, we can impute a missing value by taking an average over all other samples where it presented. In case of the higher variable we can create a logistic regression model with all other variables as predictors and predict missing yes/no values.
+
+### Task 9
+
+The homoscedasticity assumption of the fitted model is violated here. 
+
+### Task 11
+
+```{r}
+set.seed(777)
+smp <- sample.int(nrow(df), 300)
+train <- df[smp, ]
+test <- df[-smp, ]
+fit_math_model <- lm(G3 ~ ., train)
+fit_math_best <- stepAIC(fit_math_model, trace = F)
+summary(fit_math_best)
+```
+
+```{r}
+mse_err <- rmse(fit_math_model, test)^2
+mae_err <- mae(fit_math_best, test)
+print(c(mse = mse_err, mae = mae_err))
+```
+
+## Problem 5: Regression techniques
+
+### Task 1a
+
+```{r, include=F}
+set.seed(42)
+bw <- npregbw(G3 ~ absences, regtype = "lc", data = train)
+np_nw_fit <- npreg(bws = bw)
+```
+
+```{r}
+summary(np_nw_fit)
+```
+
+R-squared for Nadaraya-Watson model is 0.113144, R-squared for our best univariate regression is 0.2666.
+
+```{r}
+plot(bw)
+points(train$absences, train$G3, cex=.5, pch=19)
+```
+
+### Task 1b
+
+```{r}
+set.seed(42)
+train_matrix <- model.matrix( ~ .-1,  train[,1:length(test)-1])
+lasso_model <- glmnet(train_matrix, train$G3, alpha=1)
+cv_lasso <- cv.glmnet(train_matrix, train$G3, alpha=1)
+plot(cv_lasso)
+```
+
+```{r}
+test_matrix <- model.matrix( ~ .-1, test[,1:length(test)-1])
+lasso_pred <- predict(lasso_model, test_matrix, type="link", s=cv_lasso$lambda.min)
+lasso_mse_err <- mean((lasso_pred - test$G3)^2)
+lasso_mae_err <- mean(abs(lasso_pred - test$G3))
+print(c(lasso_mse = lasso_mse_err, 
+        step_mse = mse_err, 
+        lasso_mae = lasso_mae_err, 
+        step_mae = mae_err))
+```
+
+### Task 1c
+
+```{r}
+set.seed(42)
+cart_model <- rpart(G3 ~ ., train, method="anova", control = rpart.control(cp = 0.05))
+cart_model$cptable
+```
+
+```{r}
+cart_mae_err <- mae(cart_model, test)
+cart_mse_err <- rmse(cart_model, test)^2
+print(c(lasso_mse = lasso_mse_err, 
+        step_mse = mse_err, 
+        cart_mse = cart_mse_err,
+        lasso_mae = lasso_mae_err, 
+        step_mae = mae_err,
+        cart_mae = cart_mae_err))
+```
+
+
+Below you can see that most important variables are failures, absences, age, and for CART and linear model they are not the same.
+
+```{r}
+cart_model$variable.importance
+```
+
+```{r}
+summary(fit_math_best)
+```
+
+### Task 1d
+
+```{r}
+err_lr <- (predict(fit_math_best, test) - test$G3)^2
+err_cart <- (predict(cart_model, test) - test$G3)^2
+d <- err_lr - err_cart
+```
+
+#### Sign test 
+
+```{r}
+Id <- if_else(d > 0, 1, 0)
+binom.test(sum(Id), n = length(Id))
+```
+
+#### Wilcoxon sign rank test
+
+```{r}
+wilcox.test(d)
+```
+
+#### Diebold-Mariano test
+
+```{r}
+dm.test(err_cart, err_lr)
+```
+
+### Task 2a
+
+```{r}
+train_class <- train %>%
+  mutate(G3 = if_else(G3 > 10, T, F))
+
+test_class <- test %>%
+  mutate(G3 = if_else(G3 > 10, T, F))
+```
+
+```{r}
+set.seed(42)
+class_lr_model <- glm(G3 ~ ., data = train_class, family=binomial(logit))
+class_lr_best_model <- stepAIC(class_lr_model, trace = F)
+summary(class_lr_best_model)
+```
+
+### Task 2b
+
+The log odds of passing the course falls by 0.4429 times (by 0.6421 for the pure odds) for every increasing level of time spent with friends, given that all other parameters fixed. 
+
+### Task 2c
+
+To determine the probability of the student to pass the test we should apply a sigmoid function to the output of the regression. 
+
+```{r}
+set.seed(42)
+students <- test %>% sample_n(5) 
+students_pred <- predict(class_lr_best_model, students)
+sigmoid <- function(z) 1 / (1 + exp(-z))
+sigmoid(students_pred)
+```
+
+For a specific new student we can use the following procedure:
+
+1. collect the same number of features for the new student
+2. apply the trained model to get the forecast
+3. apply the sigmoid function to get the probability
+
+### Task 2d
+
+```{r}
+test_pred <- predict(class_lr_best_model, test_class)
+test_prob <- sigmoid(test_pred)
+student_pass_pred <- if_else(test_prob > .5, T, F)
+confusionMatrix(student_pass_pred, factor(test_class$G3), positive = "TRUE")
+```
+
+Overall accuracy of the classifier is 0.6842, though the model has some difficulties with negative examples. It correctly classified 34 out of 40 students who passed the course or 85% of all postives (Sensitivity), but only 31 out of 55 who failed or 56% of all negatives (Specificity). 
+
+### Task 2e
+
+```{r, fig.width=10, fig.height=8}
+roc_curve <- roc(test_class$G3, test_prob, auc.polygon=TRUE, grid=TRUE, plot=FALSE)
+plot(roc_curve, rint.auc=TRUE, auc.polygon=TRUE, grid.col=c("green", "red"), print.thres=TRUE,
+     reuse.auc=FALSE, print.auc=TRUE)
+```
+
+0.5 is optimal threshold, however we may intrested in increasing `Specificity` to more than 0.7 and choose 0.6 to be the threshold. 
+
+### Task 2f
+
+```{r}
+thr <- 0.6
+student_pass_new_pred <- if_else(test_prob > thr, T, F)
+confusionMatrix(student_pass_new_pred, factor(test_class$G3), positive = "TRUE")
+```
+
+Now the model is more accurate in predicting negative cases at the cost of reduced sensitivity. The overall accuracy of the classifier remained the same.
